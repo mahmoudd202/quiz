@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>12 Squares</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body, html {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #111;
+      color: white;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .view {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      transition: opacity 0.45s ease, transform 0.45s ease;
+      text-align: center;
+      padding: 40px;
+    }
+
+    .view.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.97);
+    }
+
+    #welcome {
+      background: #111;
+      z-index: 10;
+    }
+
+    #welcome h1 {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 700;
+      margin-bottom: 14px;
+      letter-spacing: -0.5px;
+    }
+
+    #welcome p {
+      font-size: 1.15rem;
+      color: rgba(255,255,255,0.55);
+      margin-bottom: 36px;
+    }
+
+    #game {
+      background: #111;
+      padding: 0;
+      z-index: 5;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 10px;
+      padding: 10px;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    .square {
+      border-radius: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: rgba(255,255,255,0.85);
+      transition: transform 0.2s ease, filter 0.2s ease, opacity 0.2s ease;
+      user-select: none;
+    }
+
+    .square:hover {
+      transform: scale(1.04);
+      filter: brightness(1.12);
+    }
+
+    .square:active {
+      transform: scale(0.97);
+    }
+
+    .square.used {
+      opacity: 0.35;
+      cursor: not-allowed;
+      pointer-events: none;
+      filter: grayscale(0.3);
+    }
+
+    #overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 40px;
+      text-align: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.35s ease;
+    }
+
+    #overlay.visible {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    #overlay h1 {
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-weight: 700;
+      margin-bottom: 20px;
+      transform: translateY(14px);
+      opacity: 0;
+      transition: transform 0.4s ease 0.15s, opacity 0.4s ease 0.15s;
+    }
+
+    #overlay p {
+      font-size: clamp(1rem, 2.5vw, 1.4rem);
+      max-width: 650px;
+      line-height: 1.65;
+      color: rgba(255,255,255,0.85);
+      transform: translateY(14px);
+      opacity: 0;
+      transition: transform 0.4s ease 0.25s, opacity 0.4s ease 0.25s;
+    }
+
+    #overlay.visible h1,
+    #overlay.visible p {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    #outro {
+      background: #111;
+      z-index: 10;
+    }
+
+    #outro h1 {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+
+    #outro p {
+      font-size: 1.15rem;
+      color: rgba(255,255,255,0.55);
+      margin-bottom: 36px;
+    }
+
+    .btn {
+      padding: 13px 28px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      border-radius: 999px;
+      color: white;
+      transition: opacity 0.2s ease, transform 0.15s ease;
+    }
+
+    .btn:hover {
+      opacity: 0.85;
+      transform: scale(1.03);
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    .btn-primary {
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(8px);
+    }
+
+    .btn-ghost {
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(8px);
+    }
+
+    #overlay .btn {
+      margin-top: 32px;
+      transform: translateY(14px);
+      opacity: 0;
+      transition: transform 0.4s ease 0.35s, opacity 0.4s ease 0.35s,
+                  background 0.2s ease;
+    }
+
+    #overlay.visible .btn {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    #outro-link {
+      position: fixed;
+      bottom: 22px;
+      right: 24px;
+      z-index: 6;
+      font-size: 0.85rem;
+      padding: 9px 18px;
+      background: #201e1e;
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 999px;
+   }
+
+   #outro-link:hover {
+    background: #0a0a0a;
+    opacity: 1;
+   }
+
+    @media (max-width: 600px) {
+      .grid {
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: repeat(6, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Welcome -->
+  <section id="welcome" class="view">
+    <h1>فتح الله عليكم فتوح العارفين</h1>
+    <p> </p>
+    <button class="btn btn-primary" onclick="showView('game')">البدء</button>
+  </section>
+
+  <!-- Game -->
+  <section id="game" class="view hidden">
+    <div class="grid" id="grid"></div>
+    <button class="btn" id="outro-link" onclick="showView('outro')">خروج</button>
+  </section>
+
+  <!-- Overlay -->
+  <div id="overlay">
+    <h1 id="overlay-num"></h1>
+    <p id="overlay-text"></p>
+    <button class="btn btn-primary" onclick="closeOverlay()">Back</button>
+  </div>
+
+  <!-- Outro -->
+  <section id="outro" class="view hidden">
+    <h1>كتب الله اجركم</h1>
+    <p> </p>
+    <button class="btn btn-primary" onclick="playAgain()" style="margin-bottom:12px;">مرة أخرى</button>
+    <button class="btn btn-ghost" onclick="showView('welcome')">الرجوع للبداية</button>
+  </section>
+
+  <script>
+    const squares = [
+      { color: "#e63946", text: "تِلْكَ الدَّارُ الْآخِرَةُ نَجْعَلُهَا لِلَّذِينَ لَا يُرِيدُونَ عُلُوًّا فِي الْأَرْضِ وَلَا فَسَادًا ۚ وَالْعَاقِبَةُ لِلْمُتَّقِينَ" },
+      { color: "#f4631e", text: "إِنَّ الدِّينَ عِندَ اللَّهِ الْإِسْلَامُ" },
+      { color: "#f9c12e", text: "تَتَجَافَىٰ جُنُوبُهُمْ عَنِ الْمَضَاجِعِ يَدْعُونَ رَبَّهُمْ خَوْفًا وَطَمَعًا وَمِمَّا رَزَقْنَاهُمْ يُنفِقُونَ" },
+      { color: "#d4a017", text: "إِنَّ اللَّهَ فَالِقُ الْحَبِّ وَالنَّوَىٰ" },
+      { color: "#06d6a0", text: "وَجَاءَ الْمُعَذِّرُونَ مِنَ الْأَعْرَابِ لِيُؤْذَنَ لَهُمْ" },
+      { color: "#48cae4", text: "وَلَا تَحْسَبَنَّ اللَّهَ غَافِلًا عَمَّا يَعْمَلُ الظَّالِمُونَ" },
+      { color: "#3a86ff", text: "قَالَتِ الْأَعْرَابُ آمَنَّا ۖ قُل لَّمْ تُؤْمِنُوا وَلَٰكِن قُولُوا أَسْلَمْنَا" },
+      { color: "#42a9b3", text: "إِنَّ إِبْرَاهِيمَ كَانَ أُمَّةً قَانِتًا لِّلَّهِ حَنِيفًا" },
+      { color: "#8338ec", text: "سَيَقُولُ لَكَ الْمُخَلَّفُونَ مِنَ الْأَعْرَابِ شَغَلَتْنَا أَمْوَالُنَا وَأَهْلُونَا" },
+      { color: "#ff006e", text: "يَا بَنِي آدَمَ قَدْ أَنزَلْنَا عَلَيْكُمْ لِبَاسًا يُوَارِي سَوْآتِكُمْ وَرِيشًا" },
+      { color: "#43aa8b", text: "اعْلَمُوا أَنَّمَا الْحَيَاةُ الدُّنْيَا لَعِبٌ وَلَهْوٌ وَزِينَةٌ وَتَفَاخُرٌ بَيْنَكُمْ وَتَكَاثُرٌ فِي الْأَمْوَالِ وَالْأَوْلَادِ" },
+      { color: "#b57794", text: "وَأَنذِرْهُمْ يَوْمَ الْآزِفَةِ إِذِ الْقُلُوبُ لَدَى الْحَنَاجِرِ كَاظِمِينَ" }
+    ];
+
+    const grid = document.getElementById("grid");
+    const overlay = document.getElementById("overlay");
+
+    function createGrid() {
+      grid.innerHTML = "";
+
+      squares.forEach((sq, i) => {
+        const el = document.createElement("div");
+        el.className = "square";
+        el.style.background = sq.color;
+        el.textContent = i + 1;
+
+        el.addEventListener("click", () => {
+          openOverlay(sq.color, i + 1, sq.text);
+          el.classList.add("used");
+        });
+
+        grid.appendChild(el);
+      });
+    }
+
+    function showView(id) {
+      document.querySelectorAll(".view").forEach(v => v.classList.add("hidden"));
+      document.getElementById(id).classList.remove("hidden");
+    }
+
+    function openOverlay(color, num, text) {
+      overlay.style.background = color;
+      document.getElementById("overlay-num").textContent = num;
+      document.getElementById("overlay-text").textContent = text;
+      overlay.classList.add("visible");
+    }
+
+    function closeOverlay() {
+      overlay.classList.remove("visible");
+    }
+
+    function playAgain() {
+      closeOverlay();
+      createGrid();
+      showView("game");
+    }
+
+    createGrid();
+  </script>
+</body>
+</html>
